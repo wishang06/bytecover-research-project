@@ -71,5 +71,5 @@ uv run python scripts\cache_cqt.py --audio data\covers80 --out cqt\covers80 --co
 
 ## Author
 
-Andy Shang, University of Melbourne (Data Science).
+Wang Ieong Shang, University of Pennsylvania.
 
