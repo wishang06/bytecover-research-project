@@ -18,8 +18,8 @@ ByteCover trains a ResNet-IBN network with two losses at once: a **classificatio
 |---|---|
 | Arm A | Classification loss only (the paper's "+IBN" configuration) |
 | Arm B | Classification + triplet loss with BNNeck (full ByteCover) |
-| Training data | SHS-100K-2025: 300 works sampled with seed 0, 13 removed for test-set overlap, 287 kept |
-| Training sizes | 50, 150 and 287 works, nested (each smaller set is a subset of the larger one) |
+| Training data | SHS-100K-2025: 300 works sampled with seed 0. A leakage audit of the full train split flagged 13 other works; none of those 13 are in this sample, so all 300 are kept |
+| Training sizes | 50, 150 and 300 works, nested (each smaller set is a subset of the larger one) |
 | Test set | Covers80 (80 songs, 2 versions each, 160 recordings) |
 | Seeds | 5 paired seeds (0 to 4), each used for both arms |
 | Metric | Mean average precision (mAP) on Covers80 |
@@ -33,7 +33,7 @@ That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 
 1. **Download audio** (`scripts/download_audio.py`). SHS-100K is a list of YouTube IDs, so audio is fetched with `yt-dlp`. `ffmpeg` keeps the first 200 s and converts it to mono at 22,050 Hz. The script takes up to 5 versions per work and can resume after interruptions. Result: 1,498 recordings, and all 300 works have at least 2 versions.
 2. **Download the test set** (`scripts/get_covers80.py`). This fetches Covers80 from Columbia's LabROSA site.
-3. **Leakage check** (`scripts/leakage_check.py`). It fuzzy-matches song titles and artists between Covers80 and the training works, so no test song is seen in training. Matches were reviewed by hand, and all 13 flagged works are excluded (`data/exclude_works.txt`).
+3. **Leakage check** (`scripts/leakage_check.py`). It fuzzy-matches song titles and artists between Covers80 and the full SHS train split. Thirteen works match (`data/exclude_works.txt`). None of them are in the seed-0 sample, so the training pool keeps all 300 works. `scripts/make_manifest.py` writes `data/train_manifest.csv`, one row per recording.
 4. **Feature caching** (`scripts/cache_cqt.py`). It computes a constant-Q transform (CQT) with nnAudio: 84 bins at 12 per octave (one per semitone over 7 octaves), hop length 512, averaged over every 100 frames as in the paper. The features are saved as float16 `.npy` files, so training never recomputes them.
 5. **Training and evaluation** (`notebooks/ablation.ipynb`) runs on a Google Colab GPU.
 
@@ -43,7 +43,7 @@ Pending.
 
 ## Known differences from the paper
 
-- **Scale.** We use 287 works, while the paper uses the full SHS-100K.
+- **Scale.** We use 300 works, while the paper uses the full SHS-100K.
 - **Time augmentation.** The CQTs are cached ahead of time, so tempo augmentation on the raw complex CQT isn't available.
 - **Data.** We use SHS-100K-2025, and some original YouTube links are no longer available.
 
@@ -57,6 +57,7 @@ git clone --depth 1 https://github.com/second-hand-songs/shs-100k data\shs-100k
 uv run python scripts\download_audio.py --csv data\shs-100k\train.csv --out audio
 uv run python scripts\get_covers80.py --out data\covers80
 uv run python scripts\leakage_check.py --lists data\covers80\list1.txt data\covers80\list2.txt
+uv run python scripts\make_manifest.py
 uv run python scripts\cache_cqt.py --audio audio --out cqt\shs --compress 100
 uv run python scripts\cache_cqt.py --audio data\covers80 --out cqt\covers80 --compress 100
 ```

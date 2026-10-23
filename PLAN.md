@@ -14,7 +14,7 @@ Rules for the agent
 Done so far
 - 300 works sampled with seed 0, 1,498 mp3s in `audio/`, and all 300 works have at least 2 versions.
 - Covers80 is in `data/covers80` (160 mp3s).
-- Leakage check: all 13 matched SHS works are excluded (`data/exclude_works.txt`), which leaves 287 training works.
+- Leakage check against full `train.csv` flagged 13 SHS works (`data/exclude_works.txt`). None of them are in the seed-0 sample, so all 300 downloaded works are kept. Training sizes are 50, 150, and 300.
 
 Step 1: cache the training CQTs (running now)
 `uv run python scripts\cache_cqt.py --audio audio --out cqt\shs --compress 100`
@@ -36,7 +36,7 @@ Zip `cqt\` to `cqt.zip` (about 25 MB) and put it in Andy's Google Drive folder "
 Step 6: training on Colab (Andy's Google One / Colab)
 Open `notebooks/ablation.ipynb` in Colab with a GPU runtime, mount Drive, and unzip `cqt.zip`.
 Design:
-- Nested training sizes from the 287 kept works: 50, 150 and 287 works (seed-0 order, so smaller sets are subsets of larger ones).
+- Nested training sizes from the 300 kept works: 50, 150 and 300 works (seed-0 order, so smaller sets are subsets of larger ones).
 - 2 arms (A: classification only; B: combined loss).
 - 5 paired seeds (0 to 4). Each seed is used for both arms at each size, giving 30 runs.
 - Metric: Covers80 mAP. Analysis: per-seed difference B minus A at each size, with a 95% t-interval.
@@ -46,7 +46,7 @@ Report back to Andy
 After each step, give one line: the step, pass or fail, and the key number. Collect the final results table (mean mAP per arm per size, plus the B minus A interval) in `results/summary.csv`.
 
 Locked rules (fixed before seeing any results; do not change)
-- Training sizes: 50, 150 and 287 works, nested, seed-0 order.
+- Training sizes: 50, 150 and 300 works, nested, seed-0 order. The largest size was corrected from 287 to 300 before any training: the 13 catalog overlaps are not in the seed-0 sample.
 - Seeds: 5 paired seeds, 0 to 4, each used for both arms.
 - Both arms train for the same fixed number of epochs. No early stopping.
 - Covers80 is only for the final test. Never use it for tuning, model selection or picking epochs.
