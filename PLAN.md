@@ -54,5 +54,6 @@ Locked rules (fixed before seeing any results; do not change)
 - Batches are 10 works by 3 recordings. Chosen before any results so every size divides evenly and each batch contains positive pairs.
 - All 30 runs use the same GPU type, a Colab L4. Each run records `torch.cuda.get_device_name(0)` in the loss log. A run on any other GPU does not count.
 - Covers80 is only for the final test. Never use it for tuning, model selection, or picking epochs.
+- Covers80 mAP uses the 160 tracks in `list1.txt` and `list2.txt` (line i is a pair). Each track is a query against the other 159, ranked by cosine similarity of that arm's retrieval vector. One relevant track, so average precision is 1 over its rank. mAP is the mean over 160 queries. The extra cached files are not scored.
 - Pass and fail criteria are set before any results come in, and are not revised afterwards.
 
