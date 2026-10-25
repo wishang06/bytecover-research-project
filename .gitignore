@@ -3,3 +3,6 @@ audio/
 cqt/
 data/covers80/
 logs/
+results/checkpoints/
+__pycache__/
+*.pyc
