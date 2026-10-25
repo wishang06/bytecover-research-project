@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from bytecover.dataset import CQTClips, load_manifest, load_work_order, subset_work_ids
-from bytecover.train import CLIPS_PER_WORK, WORKS_PER_BATCH, PKSampler, make_encoder, train
+from bytecover.train import CLIPS_PER_WORK, WORKS_PER_BATCH, PKSampler, check_l4, make_encoder, train
 
 
 def epoch_batches(dataset, work_ids, seed):
@@ -60,12 +60,30 @@ def main():
         # the gradient small. The sum of f_t is large enough to blow up Adam.
         return f_t.mean()
 
-    model = train(dummy, rows, ROOT / "cqt" / "shs", order, size=50, seed=0, epochs=1)
+    log_path = ROOT / "logs" / "train_loss_check.csv"
+    log_path.unlink(missing_ok=True)
+    try:
+        check_l4("Tesla T4")
+        print("FAIL T4 was accepted")
+        sys.exit(1)
+    except RuntimeError:
+        pass
+    check_l4("NVIDIA L4")
+    model = train(
+        dummy, rows, ROOT / "cqt" / "shs", order,
+        size=50, seed=0, epochs=1, arm="check", log_path=log_path,
+    )
     moved = not torch.equal(first, model.conv1.weight.detach().cpu())
     finite = all(torch.isfinite(p).all() for p in model.parameters())
+    logged = log_path.read_text(encoding="utf-8").strip().splitlines()
+    header, row = logged[0], logged[1]
     print(f"epoch ran weight_moved={moved} weights_finite={finite}")
-    if not moved or not finite:
+    print(row)
+    if not moved or not finite or len(logged) != 2 or "check,50,0,1," not in row or not row.endswith(",cpu"):
         print("FAIL step")
+        sys.exit(1)
+    if header != "arm,size,seed,epoch,mean_objective,gpu":
+        print("FAIL header", header)
         sys.exit(1)
     print("PASS")
 

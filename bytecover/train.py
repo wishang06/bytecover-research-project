@@ -10,7 +10,11 @@ and 300. Adam uses learning rate 0.0004 and weight decay 0, matching the
 paper's stated optimizer with no extra schedule.
 
 `loss_fn(f_t, y)` is Andy's Arm A or Arm B loss. This module does not define one.
+Every epoch is appended to the loss log. The 30-run grid uses EPOCHS (100) and require_l4=True.
 """
+import csv
+from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -20,6 +24,8 @@ from bytecover.model import ResNet50IBN
 WORKS_PER_BATCH = 10
 CLIPS_PER_WORK = 3
 LEARNING_RATE = 4e-4
+EPOCHS = 100
+LOSS_COLUMNS = ["arm", "size", "seed", "epoch", "mean_objective", "gpu"]
 
 
 class PKSampler:
@@ -55,7 +61,30 @@ def make_encoder(seed):
     return ResNet50IBN()
 
 
-def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, device="cpu"):
+def gpu_name(device):
+    if str(device).startswith("cuda") and torch.cuda.is_available():
+        return torch.cuda.get_device_name(0)
+    return "cpu"
+
+
+def check_l4(name):
+    """The 30-run grid counts only on a Colab L4."""
+    if "L4" not in name:
+        raise RuntimeError(f"this run requires a Colab L4, got {name}")
+
+
+def append_loss_row(path, row):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    new = not path.exists() or path.stat().st_size == 0
+    with path.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=LOSS_COLUMNS)
+        if new:
+            writer.writeheader()
+        writer.writerow(row)
+
+
+def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, arm, device="cpu", log_path="results/train_loss.csv", require_l4=False):
     if epochs < 1:
         raise ValueError("epochs must be at least 1")
     work_ids = subset_work_ids(work_order, size)
@@ -64,6 +93,9 @@ def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, device="cpu"):
     generator.manual_seed(seed)
     sampler = PKSampler(dataset, work_ids, generator)
     loader = DataLoader(dataset, batch_sampler=sampler, collate_fn=collate_clips)
+    name = gpu_name(device)
+    if require_l4:
+        check_l4(name)
     model = make_encoder(seed).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=0)
     model.train()
@@ -83,6 +115,15 @@ def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, device="cpu"):
             optimizer.step()
             total += float(loss.detach())
             steps += 1
-        print(f"size {size} seed {seed} epoch {epoch + 1}/{epochs} mean_objective {total / steps:.6f}", flush=True)
+        mean_objective = total / steps
+        print(f"arm {arm} size {size} seed {seed} epoch {epoch + 1}/{epochs} mean_objective {mean_objective:.6f} gpu {name}", flush=True)
+        append_loss_row(log_path, {
+            "arm": arm,
+            "size": size,
+            "seed": seed,
+            "epoch": epoch + 1,
+            "mean_objective": f"{mean_objective:.6f}",
+            "gpu": name,
+        })
     model.eval()
     return model

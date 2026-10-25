@@ -40,7 +40,7 @@ Design:
 - 2 arms (A: classification only; B: combined loss).
 - 5 paired seeds (0 to 4). Each seed is used for both arms at each size, giving 30 runs.
 - Metric: Covers80 mAP. Analysis: per-seed difference B minus A at each size, with a 95% t-interval.
-- First do one timing run (1 seed, largest size, both arms) and report minutes per run before launching the rest.
+- Timing run, done before any Covers80 score: size 300, seed 0, one epoch, `device: cuda`, 0.18 minutes. The objective in that run was a stand-in, not a loss. Epochs are locked at 100 from that clock.
 
 Report back to Andy
 After each step, give one line: the step, pass or fail, and the key number. Collect the final results table (mean mAP per arm per size, plus the B minus A interval) in `results/summary.csv`.
@@ -48,8 +48,11 @@ After each step, give one line: the step, pass or fail, and the key number. Coll
 Locked rules (fixed before seeing any results; do not change)
 - Training sizes: 50, 150 and 300 works, nested, seed-0 order. The largest size was corrected from 287 to 300 before any training: the 13 catalog overlaps are not in the seed-0 sample.
 - Seeds: 5 paired seeds, 0 to 4, each used for both arms.
-- Both arms train for the same fixed number of epochs. No early stopping. The epoch count is still unset: the paper does not state one.
+- Both arms train for 100 epochs. No early stopping. The paper states no count. 100 is locked from the 0.18 min/epoch timing, before any Covers80 score. It matches the epoch count in Orfium's reimplementation.
+- Log the mean training objective every epoch for every run, in `results/train_loss.csv`, so a run can be shown to have levelled off without looking at Covers80. Columns: arm, size, seed, epoch, mean_objective, gpu.
+- A fixed epoch count is not a fixed step count. Batches per epoch are 5, 15, and 30 at sizes 50, 150, and 300. At 100 epochs that is 500, 1,500, and 3,000 optimizer steps. The 300-work runs get 6 times as many steps as the 50-work runs.
 - Batches are 10 works by 3 recordings. Chosen before any results so every size divides evenly and each batch contains positive pairs.
-- Covers80 is only for the final test. Never use it for tuning, model selection or picking epochs.
+- All 30 runs use the same GPU type, a Colab L4. Each run records `torch.cuda.get_device_name(0)` in the loss log. A run on any other GPU does not count.
+- Covers80 is only for the final test. Never use it for tuning, model selection, or picking epochs.
 - Pass and fail criteria are set before any results come in, and are not revised afterwards.
 

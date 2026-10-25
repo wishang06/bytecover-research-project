@@ -27,7 +27,7 @@ ByteCover trains a ResNet-IBN network with two losses at once: a **classificatio
 
 That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 
-**Rules fixed before any results:** both arms train for the same fixed number of epochs with no early stopping. Covers80 is used only for the final test, never for tuning. The analysis plan is set in advance. Both arms share the encoder, including GeM, so the comparison is the loss. The paper's "+IBN" row still used average pooling; copying that row would have mixed a pooling change into the loss comparison. Each batch is 10 works and 3 recordings (30 clips), so every work is seen once per epoch and a triplet has a positive pair in the batch. The paper's batch of 32 does not divide 50, 150, and 300.
+**Rules fixed before any results:** both arms train for 100 epochs with no early stopping. Covers80 is used only for the final test, never for tuning. The analysis plan is set in advance. Both arms share the encoder, including GeM, so the comparison is the loss. The paper's "+IBN" row still used average pooling; copying that row would have mixed a pooling change into the loss comparison. Each batch is 10 works and 3 recordings (30 clips), so every work is seen once per epoch and a triplet has a positive pair in the batch. The paper's batch of 32 does not divide 50, 150, and 300.
 
 ## Pipeline
 
