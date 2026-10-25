@@ -1,16 +1,13 @@
 """Arm A and Arm B objectives. The encoder is shared and is not defined here.
 
-Arm A is classification only. A linear layer maps f_t to one logit per work,
-and the objective is cross-entropy.
-
-Arm B is the ByteCover combined loss. A batch-norm layer, the BNNeck, maps
-f_t to f_c. A bias-free linear layer classifies f_c. The triplet term uses
-f_t, not f_c, with Euclidean distance and margin 0.3. In a batch of 10 works
-by 3 clips, each anchor's positive is the farthest other clip of the same
-work, and its negative is the nearest clip of any other work.
-
-embed() is the vector for retrieval. Arm A returns f_t. Arm B returns f_c.
+Both arms use the same BNNeck. It maps f_t to f_c with batch norm, then a
+bias-free linear layer classifies f_c. Retrieval uses f_c for both arms.
 Cosine distance is applied by the evaluation, not here.
+
+Arm A is that classification loss only. Arm B adds a batch-hard triplet on
+f_t, not on f_c, with Euclidean distance and margin 0.3. In a batch of 10
+works by 3 clips, each anchor's positive is the farthest other clip of the
+same work, and its negative is the nearest clip of any other work.
 """
 import torch
 from torch import nn
@@ -41,28 +38,31 @@ def batch_hard_triplet(f_t, y, margin):
     return (hard_pos - hard_neg + margin).clamp(min=0).mean()
 
 
-class ArmA(nn.Module):
-    def __init__(self, n_classes, dim=DIM):
-        super().__init__()
-        self.classifier = nn.Linear(dim, n_classes)
-
-    def embed(self, f_t):
-        return f_t
-
-    def forward(self, f_t, y):
-        return F.cross_entropy(self.classifier(f_t), y)
-
-
-class ArmB(nn.Module):
-    def __init__(self, n_classes, dim=DIM, margin=MARGIN):
+class _Neck(nn.Module):
+    def __init__(self, n_classes, dim):
         super().__init__()
         self.bn = nn.BatchNorm1d(dim)
         self.classifier = nn.Linear(dim, n_classes, bias=False)
-        self.margin = margin
 
     def embed(self, f_t):
         return self.bn(f_t)
 
+    def classification(self, f_t, y):
+        return F.cross_entropy(self.classifier(self.embed(f_t)), y)
+
+
+class ArmA(_Neck):
+    def __init__(self, n_classes, dim=DIM):
+        super().__init__(n_classes, dim)
+
     def forward(self, f_t, y):
-        logits = self.classifier(self.embed(f_t))
-        return F.cross_entropy(logits, y) + batch_hard_triplet(f_t, y, self.margin)
+        return self.classification(f_t, y)
+
+
+class ArmB(_Neck):
+    def __init__(self, n_classes, dim=DIM, margin=MARGIN):
+        super().__init__(n_classes, dim)
+        self.margin = margin
+
+    def forward(self, f_t, y):
+        return self.classification(f_t, y) + batch_hard_triplet(f_t, y, self.margin)

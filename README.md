@@ -16,8 +16,8 @@ ByteCover trains a ResNet-IBN network with two losses at once: a **classificatio
 
 | | |
 |---|---|
-| Arm A | Classification loss only, on the same ResNet50-IBN and GeM encoder as Arm B |
-| Arm B | That same encoder, plus BNNeck, classification, and triplet loss |
+| Arm A | Classification only. Same encoder, BNNeck, and bias-free classifier as Arm B. Retrieval uses f_c |
+| Arm B | Arm A plus a batch-hard triplet on f_t. Retrieval uses the same f_c |
 | Training data | SHS-100K-2025: 300 works sampled with seed 0. A leakage audit of the full train split flagged 13 other works; none of those 13 are in this sample, so all 300 are kept |
 | Training sizes | 50, 150 and 300 works, nested (each smaller set is a subset of the larger one) |
 | Test set | Covers80 (80 songs, 2 versions each, 160 recordings) |

@@ -53,8 +53,9 @@ def main():
     loss_b = arm_b(f_b, y)
     loss_b.backward()
     ok = (
-        arm_a.classifier.bias is not None
+        arm_a.classifier.bias is None
         and arm_b.classifier.bias is None
+        and tuple(arm_a.embed(f_t).shape) == (30, 16)
         and torch.isfinite(loss_a)
         and torch.isfinite(loss_b)
         and arm_a.classifier.weight.grad.abs().sum() > 0
