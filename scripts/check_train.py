@@ -69,7 +69,7 @@ def main():
     except RuntimeError:
         pass
     check_l4("NVIDIA L4")
-    model = train(
+    model, _head = train(
         dummy, rows, ROOT / "cqt" / "shs", order,
         size=50, seed=0, epochs=1, arm="check", log_path=log_path,
     )

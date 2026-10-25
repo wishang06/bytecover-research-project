@@ -9,7 +9,8 @@ exactly one batch per epoch. The paper uses 32, which does not divide 50, 150,
 and 300. Adam uses learning rate 0.0004 and weight decay 0, matching the
 paper's stated optimizer with no extra schedule.
 
-`loss_fn(f_t, y)` is Andy's Arm A or Arm B loss. This module does not define one.
+`loss_fn(f_t, y)` is Arm A or Arm B from bytecover.loss. If it is a module, its
+parameters are trained with the encoder. The return value is (encoder, loss_fn).
 Every epoch is appended to the loss log. The 30-run grid uses EPOCHS (100) and require_l4=True.
 """
 import csv
@@ -97,7 +98,12 @@ def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, arm, device="c
     if require_l4:
         check_l4(name)
     model = make_encoder(seed).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=0)
+    params = list(model.parameters())
+    if isinstance(loss_fn, torch.nn.Module):
+        loss_fn = loss_fn.to(device)
+        loss_fn.train()
+        params += list(loss_fn.parameters())
+    optimizer = torch.optim.Adam(params, lr=LEARNING_RATE, weight_decay=0)
     model.train()
     for epoch in range(epochs):
         total = 0.0
@@ -126,4 +132,6 @@ def train(loss_fn, rows, cqt_dir, work_order, size, seed, epochs, arm, device="c
             "gpu": name,
         })
     model.eval()
-    return model
+    if isinstance(loss_fn, torch.nn.Module):
+        loss_fn.eval()
+    return model, loss_fn
