@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Build data/train_manifest.csv: one row per cached SHS recording.
+"""Build data/train_manifest.csv and data/work_order.txt.
 
 Joins audio/downloaded.csv with the cqt/shs cache. data/exclude_works.txt is
 the catalog leakage audit (13 SHS works that match Covers80). Those works are
 outside the seed-0 sample, so every downloaded row is kept and marked
 excluded=0. The script fails if a flagged work does appear in the sample.
 
+work_order.txt is the seed-0 sample order from SHS train.csv (same shuffle as
+scripts/download_audio.py). Nested training sizes take prefixes of that list.
+
   uv run python scripts\\make_manifest.py
 """
 import argparse
 import csv
+import random
 import sys
 from collections import Counter
 from pathlib import Path
@@ -32,13 +36,27 @@ def load_downloads(path):
     return rows
 
 
+def seed0_order(shs_csv, n_works, seed):
+    """Match download_audio.load_sample: sort work ids as strings, then shuffle."""
+    ids = set()
+    with shs_csv.open(newline="", encoding="utf-8") as handle:
+        for row in csv.reader(handle):
+            ids.add(row[1])
+    ordered = sorted(ids)
+    random.Random(seed).shuffle(ordered)
+    return ordered[:n_works]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--downloads", type=Path, default=Path("audio") / "downloaded.csv")
     ap.add_argument("--exclude", type=Path, default=Path("data") / "exclude_works.txt")
     ap.add_argument("--cqt", type=Path, default=Path("cqt") / "shs")
+    ap.add_argument("--shs", type=Path, default=Path("data") / "shs-100k" / "train.csv")
     ap.add_argument("--out", type=Path, default=Path("data") / "train_manifest.csv")
+    ap.add_argument("--order-out", type=Path, default=Path("data") / "work_order.txt")
     ap.add_argument("--kept-works", type=int, default=300)
+    ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
 
     excluded = load_excluded(a.exclude)
@@ -67,12 +85,19 @@ def main():
     print(f"kept recordings: {sum(kept.values())}")
     print(f"kept works with <2 versions: {len(thin)}")
 
+    order = seed0_order(a.shs, a.kept_works, a.seed)
+    order_mismatch = set(order) != set(kept)
+    print(f"seed-{a.seed} order: {len(order)} works, first {order[:3]}")
+    if order_mismatch:
+        print(f"order not equal to kept works: {len(set(order) ^ set(kept))} ids differ")
+
     ok = (
         not missing_npy
         and not missing_row
         and not overlap
         and len(kept) == a.kept_works
         and not thin
+        and not order_mismatch
     )
     if not ok:
         print("FAIL")
@@ -93,6 +118,8 @@ def main():
                 "excluded": "1" if r["work_id"] in excluded else "0",
             })
     print(f"wrote {len(ordered)} rows -> {a.out}")
+    a.order_out.write_text("\n".join(order) + "\n", encoding="utf-8")
+    print(f"wrote {len(order)} work ids -> {a.order_out}")
     print("PASS")
 
 

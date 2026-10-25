@@ -1,6 +1,6 @@
 ﻿# PLAN.md: ByteCover small-data ablation (for the Cursor agent)
 
-Goal: test whether ByteCover's combined loss (Arm B, BNNeck classification + triplet) still beats classification-only (Arm A, the paper's +IBN row) as training data shrinks. Train on SHS-100K-2025, test on Covers80. Deadline Fri 30 Oct (hard stop Sun 1 Nov).
+Goal: test whether ByteCover's combined loss (Arm B, BNNeck classification + triplet) still beats classification-only (Arm A) as training data shrinks. Both arms share the ResNet50-IBN and GeM encoder, so the comparison is the loss. The paper's "+IBN" row used average pooling; sharing GeM avoids mixing that change into the result. Train on SHS-100K-2025, test on Covers80. Deadline Fri 30 Oct (hard stop Sun 1 Nov).
 
 Rules for the agent
 - Andy is learning as he goes. Before each step, explain in plain words what it does and why, then wait for him to say go. After it runs, explain what the output means.
@@ -48,7 +48,8 @@ After each step, give one line: the step, pass or fail, and the key number. Coll
 Locked rules (fixed before seeing any results; do not change)
 - Training sizes: 50, 150 and 300 works, nested, seed-0 order. The largest size was corrected from 287 to 300 before any training: the 13 catalog overlaps are not in the seed-0 sample.
 - Seeds: 5 paired seeds, 0 to 4, each used for both arms.
-- Both arms train for the same fixed number of epochs. No early stopping.
+- Both arms train for the same fixed number of epochs. No early stopping. The epoch count is still unset: the paper does not state one.
+- Batches are 10 works by 3 recordings. Chosen before any results so every size divides evenly and each batch contains positive pairs.
 - Covers80 is only for the final test. Never use it for tuning, model selection or picking epochs.
 - Pass and fail criteria are set before any results come in, and are not revised afterwards.
 

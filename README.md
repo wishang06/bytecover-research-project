@@ -16,8 +16,8 @@ ByteCover trains a ResNet-IBN network with two losses at once: a **classificatio
 
 | | |
 |---|---|
-| Arm A | Classification loss only (the paper's "+IBN" configuration) |
-| Arm B | Classification + triplet loss with BNNeck (full ByteCover) |
+| Arm A | Classification loss only, on the same ResNet50-IBN and GeM encoder as Arm B |
+| Arm B | That same encoder, plus BNNeck, classification, and triplet loss |
 | Training data | SHS-100K-2025: 300 works sampled with seed 0. A leakage audit of the full train split flagged 13 other works; none of those 13 are in this sample, so all 300 are kept |
 | Training sizes | 50, 150 and 300 works, nested (each smaller set is a subset of the larger one) |
 | Test set | Covers80 (80 songs, 2 versions each, 160 recordings) |
@@ -27,7 +27,7 @@ ByteCover trains a ResNet-IBN network with two losses at once: a **classificatio
 
 That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 
-**Rules fixed before any results:** both arms train for the same fixed number of epochs with no early stopping. Covers80 is used only for the final test, never for tuning. The analysis plan is set in advance.
+**Rules fixed before any results:** both arms train for the same fixed number of epochs with no early stopping. Covers80 is used only for the final test, never for tuning. The analysis plan is set in advance. Both arms share the encoder, including GeM, so the comparison is the loss. The paper's "+IBN" row still used average pooling; copying that row would have mixed a pooling change into the loss comparison. Each batch is 10 works and 3 recordings (30 clips), so every work is seen once per epoch and a triplet has a positive pair in the batch. The paper's batch of 32 does not divide 50, 150, and 300.
 
 ## Pipeline
 
