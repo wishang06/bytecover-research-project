@@ -4,7 +4,7 @@ A small-scale replication study of **ByteCover** (Du et al., ByteDance, ICASSP 2
 
 The model and method are ByteDance's. This project reproduces them at a smaller scale, and the data-size comparison is my own study. It follows on from a paper I wrote at Fudan University explaining the ByteCover approach.
 
-> Status: in progress. Data and features are prepared, and training has not started yet. No results are reported here.
+> Status: the 30-run grid is complete. The comparison below uses the corrected Arm A, which has the same BNNeck and retrieval vector as Arm B.
 
 ## Research question
 
@@ -39,7 +39,15 @@ That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 
 ## Results
 
-Pending.
+Covers80 mAP after 100 epochs. Each cell is the mean over five paired seeds. Delta is mAP for Arm B minus mAP for Arm A. The interval is a 95% paired t-interval on those five differences (4 degrees of freedom).
+
+| Works | Mean mAP A | Mean mAP B | Mean delta | 95% interval |
+|---|---|---|---|---|
+| 50 | 0.0330 | 0.0480 | 0.0150 | 0.0068 to 0.0233 |
+| 150 | 0.0451 | 0.0558 | 0.0108 | −0.0120 to 0.0335 |
+| 300 | 0.0562 | 0.0794 | 0.0232 | 0.0019 to 0.0445 |
+
+The intervals at 50 and 300 works exclude zero. The interval at 150 works includes zero. With five seeds the intervals are wide. A random ranking of 159 other tracks would score about 0.035, so these absolute scores are close to that floor. An earlier Arm A, trained without the BNNeck, was discarded. Those scores are in `results/runs_discarded_biased_head.csv`.
 
 ## Known differences from the paper
 
