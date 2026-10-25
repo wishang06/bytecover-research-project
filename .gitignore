@@ -1,7 +1,9 @@
 data/shs-100k/
 audio/
 cqt/
-data/covers80/
+data/covers80/*
+!data/covers80/list1.txt
+!data/covers80/list2.txt
 logs/
 results/checkpoints/
 __pycache__/
