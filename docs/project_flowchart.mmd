@@ -1,0 +1,30 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "18px", "background": "#ffffff", "lineColor": "#546e7a"}, "flowchart": {"htmlLabels": true, "useMaxWidth": false, "curve": "basis", "padding": 18, "nodeSpacing": 28, "rankSpacing": 36, "wrappingWidth": 640}}}%%
+flowchart TD
+    classDef done fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px,color:#1b3a1b
+    classDef todo fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#4e2600
+
+    subgraph key ["How to read this figure"]
+        direction LR
+        keyDone["Green: finished in this repo"]
+        keyTodo["Orange: still to do"]
+    end
+
+    q["Research question<br/>Does batch-hard triplet loss, margin 0.3 on f_t,<br/>added to this ByteCover-style model,<br/>improve cover-song identification<br/>when the training set is small?"]
+    data["Data<br/>SHS-100K-2025 sample, seed 0<br/>300 works and 1498 recordings<br/>Nested sizes: 50 inside 150 inside 300 works<br/>Covers80 is test only: 80 works, 2 versions,<br/>160 recordings on list1 and list2"]
+    leak["Leakage check<br/>13 SHS works in data/exclude_works.txt<br/>match Covers80<br/>None of those 13 are in the seed-0 sample<br/>All 300 works are kept"]
+    prep["Preprocessing<br/>Audio to CQT, saved as float16 npy<br/>84 bins, 12 per octave, hop 512, compress 100<br/>Zero-pad to 86 frames and store the true length<br/>Cached cqt/covers80 has 164 files<br/>Scoring uses only the 160 list recordings"]
+    model["Shared model, both arms<br/>ResNet50-IBN, last stage not downsampled<br/>Feature map shape: batch by 2048 by 6 by 6<br/>GeM pooling skips padded time columns<br/>f_t is 2048-d<br/>BNNeck BatchNorm1d produces f_c<br/>Bias-free linear classifier<br/>50, 150, or 300 outputs, one per work in that run"]
+    arms["Losses<br/>Arm A: softmax cross-entropy only<br/>Arm B: cross-entropy plus batch-hard triplet<br/>on f_t, Euclidean distance, margin 0.3<br/>Retrieval vector is f_c for both arms"]
+    train["Training<br/>Each batch is 10 works by 3 clips, 30 clips<br/>Forward, loss, backprop, then one Adam step<br/>Learning rate 0.0004, weight decay 0<br/>100 epochs, no early stopping<br/>Covers80 is not used for tuning<br/>Every counted run uses a Colab NVIDIA L4"]
+    grid["30-run grid, finished<br/>3 sizes, 2 arms, seeds 0 to 4<br/>Checkpoints named like A_s300_k4.pt<br/>Also runs.csv and train_loss.csv<br/>Saved on Google Drive in ByteCover Project/results<br/>The csv files are also in results/"]
+    ev["Covers80 evaluation, finished<br/>After each run's 100 epochs, load that checkpoint<br/>Embed the 160 list recordings with f_c<br/>Rank the other 159 by cosine similarity<br/>Metric is mean average precision, mAP<br/>All 30 scores are in results/runs.csv"]
+    an["Paired analysis, finished<br/>B minus A at each size, seeds 0 to 4<br/>95 percent paired t-interval, 4 degrees of freedom<br/>results/summary.csv and the README table"]
+    losscheck["TODO. Loss curves<br/>Check that training loss levelled off<br/>in results/train_loss.csv<br/>The file has 100 epochs for all 30 runs<br/>A written conclusion is not in the repo"]
+    passfail["TODO. Pass and fail lines<br/>Compare paired B minus A with the<br/>pre-registered pass and fail lines<br/>PLAN.md says the lines were fixed in advance<br/>The numeric thresholds are not in the repo"]
+    report["TODO. Write the report"]
+    outreach["TODO. Outreach"]
+
+    key --> q --> data --> leak --> prep --> model --> arms --> train --> grid --> ev --> an --> losscheck --> passfail --> report --> outreach
+
+    class keyDone,q,data,leak,prep,model,arms,train,grid,ev,an done
+    class keyTodo,losscheck,passfail,report,outreach todo
