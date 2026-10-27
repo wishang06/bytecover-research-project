@@ -1,0 +1,66 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "18px", "background": "#ffffff", "lineColor": "#546e7a"}, "flowchart": {"htmlLabels": true, "useMaxWidth": false, "curve": "basis", "padding": 18, "nodeSpacing": 28, "rankSpacing": 36, "wrappingWidth": 640}}}%%
+flowchart TD
+    classDef song fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef arm fill:#ede7f6,stroke:#4527a0,stroke-width:2px,color:#311b92
+    classDef seed fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#01579b
+    classDef sum fill:#fce4ec,stroke:#ad1457,stroke-width:2px,color:#880e4f
+    classDef step fill:#eceff1,stroke:#455a64,stroke-width:2px,color:#263238
+
+    exp["Experiment<br/>30 independent runs<br/>Each run trains its own model from scratch<br/>The seed fixes that run's encoder weights<br/>and its batch order"]
+
+    exp --> s50
+
+    subgraph g50 ["Training size: 50 songs"]
+        direction TB
+        s50["50 songs<br/>This number is how many songs the run trains on<br/>It is not a batch size<br/>Prefix of data/work_order.txt, seed-0 order"]
+        s50 --> a50["Arm A<br/>Softmax cross-entropy only"]
+        s50 --> b50["Arm B<br/>Cross-entropy plus batch-hard triplet<br/>margin 0.3 on f_t"]
+        a50 --> k50a["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        b50 --> k50b["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        k50a --> n50["10 runs at 50 songs"]
+        k50b --> n50
+    end
+
+    n50 -->|"These 50 songs are a subset of the 150"| s150
+
+    subgraph g150 ["Training size: 150 songs"]
+        direction TB
+        s150["150 songs<br/>Count of songs, not a batch size<br/>Contains every song in the 50-song set"]
+        s150 --> a150["Arm A<br/>Softmax cross-entropy only"]
+        s150 --> b150["Arm B<br/>Cross-entropy plus batch-hard triplet<br/>margin 0.3 on f_t"]
+        a150 --> k150a["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        b150 --> k150b["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        k150a --> n150["10 runs at 150 songs"]
+        k150b --> n150
+    end
+
+    n150 -->|"These 150 songs are a subset of the 300"| s300
+
+    subgraph g300 ["Training size: 300 songs"]
+        direction TB
+        s300["300 songs<br/>Count of songs, not a batch size<br/>Contains every song in the 150-song set<br/>1498 recordings in this set"]
+        s300 --> a300["Arm A<br/>Softmax cross-entropy only"]
+        s300 --> b300["Arm B<br/>Cross-entropy plus batch-hard triplet<br/>margin 0.3 on f_t"]
+        a300 --> k300a["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        b300 --> k300b["Seeds 0, 1, 2, 3, 4<br/>5 separate runs"]
+        k300a --> n300["10 runs at 300 songs"]
+        k300b --> n300
+    end
+
+    n300 --> total["2 arms times 3 song-counts times 5 seeds<br/>30 independent runs<br/>No run continues from another run's weights"]
+
+    total --> epochs
+
+    subgraph one ["Inside any one of the 30 runs"]
+        direction TB
+        epochs["100 epochs, fixed<br/>No early stopping"]
+        epochs --> onepass["Each epoch is one pass<br/>over that run's songs only<br/>Every song in the size is in exactly one batch"]
+        onepass --> batches["The epoch is split into batches of 30 clips<br/>50 songs: 5 batches per epoch, 500 updates<br/>150 songs: 15 batches per epoch, 1500 updates<br/>300 songs: 30 batches per epoch, 3000 updates<br/>A larger set means more batches, same batch size"]
+        batches --> onebatch["One batch is always 30 clips<br/>10 works by 3 clips<br/>Forward, loss, backprop<br/>One Adam step, learning rate 0.0004, weight decay 0"]
+    end
+
+    class exp,s50,s150,s300,n50,n150,n300 song
+    class a50,b50,a150,b150,a300,b300 arm
+    class k50a,k50b,k150a,k150b,k300a,k300b seed
+    class total sum
+    class epochs,onepass,batches,onebatch step
