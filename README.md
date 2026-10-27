@@ -49,6 +49,8 @@ The batch is always 30 clips. A larger training set means more batches per epoch
 
 Figures, captions, and Mermaid source: [docs/diagrams.md](docs/diagrams.md).
 
+Report plan for office hours: [docs/report_outline.md](docs/report_outline.md).
+
 ## Results
 
 Covers80 mAP after 100 epochs. Each cell is the mean over five paired seeds. Delta is mAP for Arm B minus mAP for Arm A. The interval is a 95% paired t-interval on those five differences (4 degrees of freedom).
