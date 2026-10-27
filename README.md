@@ -37,6 +37,18 @@ That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 4. **Feature caching** (`scripts/cache_cqt.py`). It computes a constant-Q transform (CQT) with nnAudio: 84 bins at 12 per octave (one per semitone over 7 octaves), hop length 512, averaged over every 100 frames as in the paper. The features are saved as float16 `.npy` files, so training never recomputes them.
 5. **Training and evaluation** (`notebooks/ablation.ipynb`) runs on a Google Colab GPU.
 
+## Diagrams
+
+![End-to-end project flowchart. Green steps are finished. Orange steps are still to do.](docs/project_flowchart.jpg)
+
+The batch is always 30 clips. A larger training set means more batches per epoch, and each of the 30 runs trains its own model from scratch.
+
+![Training structure. The sizes are counts of songs, and each run trains its own model.](docs/training_structure.jpg)
+
+50, 150, and 300 are counts of songs, nested so each smaller set sits inside the next. The batch stays 30 clips, so those larger sets only add more batches per epoch. Each run trains its own model from scratch.
+
+Figures, captions, and Mermaid source: [docs/diagrams.md](docs/diagrams.md).
+
 ## Results
 
 Covers80 mAP after 100 epochs. Each cell is the mean over five paired seeds. Delta is mAP for Arm B minus mAP for Arm A. The interval is a 95% paired t-interval on those five differences (4 degrees of freedom).
