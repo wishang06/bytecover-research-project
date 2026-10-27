@@ -1,6 +1,6 @@
 # Report outline
 
-A plan for the write-up Andy will take to office hours with Professor Edgar Dobriban (STAT 4310). This is not the report. It is the structure, the points to make, and the questions to ask. Every number below is copied from `results/summary.csv`, `results/runs.csv`, `results/train_loss.csv`, or the training code. Nothing here is a new experimental result.
+Every number below is copied from `results/summary.csv`, `results/runs.csv`, `results/train_loss.csv`, or the training code. Nothing here is a new experimental result.
 
 The numeric pass/fail thresholds are not in the repo. `PLAN.md` says they were fixed before any Covers80 score and must not be revised afterwards. It does not record the actual cutoffs. The report must not invent them after seeing the table.
 
@@ -170,8 +170,7 @@ Office hours, STAT 4310. Eight questions. The first four are the ones to ask eve
 1. Is a paired t-interval with 5 seeds per size enough? The intervals use 4 degrees of freedom and a critical value of 2.776445. At 150 works the sd of B minus A is 0.018329 and the interval is -0.011987 to 0.033530. Would you want more seeds, a different interval, or a different test of the five paired differences?
 2. Is Covers80 too small at 160 recordings (each query ranked against the other 159)? Should a second test set be added, for example Da-TACOS, before any claim about cover-song identification rather than about this one list?
 3. Does a fixed epoch count treat the small runs unfairly? They get 500 Adam steps, the 150-work runs get 1,500, and the 300-work runs get 3,000. Should a follow-up fix the number of steps instead of the number of epochs?
-4. What would make this worth extending into real research with you, rather than leaving it as a small reproduction of ByteCover? Which piece is missing: a pre-registered decision rule, a second dataset, a step-matched comparison, or a different question?
-5. At 150 works, two of the five paired deltas are negative (-0.012280 and -0.003535), while all five at 50 works are positive. Should that dip be described as noise from n = 5, or is it a result that needs its own sentence?
-6. Arm A's cross-entropy is below 0.001 by epoch 100 (0.000587, 0.000776, 0.000837). Arm B's combined objective at epoch 100 is 0.141571, 0.105981, and 0.136060, and at 150 works it moves from 0.183865 at epoch 50 to 0.105981 at epoch 100. The two logs are different functions. How should the report talk about convergence, and is epoch 100 late enough for Arm B?
-7. Absolute mAP sits near the README's random-ranking floor of about 0.035 (best summary cell: 0.079402). Should the abstract lead with the paired intervals and explicitly refuse a claim that the system identifies covers well?
-8. `PLAN.md` says the pass and fail lines were fixed before the results and must not be changed. The numbers are not in the repo. If they cannot be found in notes from before the runs, should the report say the decision rule was not preserved, rather than writing a cutoff now?
+4. At 150 works, two of the five paired deltas are negative (-0.012280 and -0.003535), while all five at 50 works are positive. Should that dip be described as noise from n = 5, or is it a result that needs its own sentence?
+5. Arm A's cross-entropy is below 0.001 by epoch 100 (0.000587, 0.000776, 0.000837). Arm B's combined objective at epoch 100 is 0.141571, 0.105981, and 0.136060, and at 150 works it moves from 0.183865 at epoch 50 to 0.105981 at epoch 100. The two logs are different functions. How should the report talk about convergence, and is epoch 100 late enough for Arm B?
+6. Absolute mAP sits near the README's random-ranking floor of about 0.035 (best summary cell: 0.079402). Should the abstract lead with the paired intervals and explicitly refuse a claim that the system identifies covers well?
+7. `PLAN.md` says the pass and fail lines were fixed before the results and must not be changed. The numbers are not in the repo. If they cannot be found in notes from before the runs, should the report say the decision rule was not preserved, rather than writing a cutoff now?
