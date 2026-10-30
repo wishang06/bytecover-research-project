@@ -39,18 +39,92 @@ That's 3 sizes, 2 arms and 5 seeds, so 30 training runs.
 
 ## Diagrams
 
-![End-to-end project flowchart. Green steps are finished. Orange steps are still to do.](docs/project_flowchart.jpg)
+### Project pipeline
 
-The batch is always 30 clips. A larger training set means more batches per epoch, and each of the 30 runs trains its own model from scratch.
+```mermaid
+flowchart LR
+    classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef todo fill:#fff3e0,stroke:#ef6c00,color:#e65100
 
-![Training structure. The sizes are counts of songs, and each run trains its own model.](docs/training_structure.jpg)
+    subgraph D["Data"]
+        direction TB
+        d1["SHS-100K-2025<br/>300 works · 1,498 recordings"]
+        d2["Covers80<br/>160 recordings · test only"]
+        d3["Leakage check<br/>13 flagged · 0 in sample"]
+    end
 
-50, 150, and 300 are counts of songs, nested so each smaller set sits inside the next. The batch stays 30 clips, so those larger sets only add more batches per epoch. Each run trains its own model from scratch.
+    subgraph P["Features"]
+        direction TB
+        p1["CQT · nnAudio<br/>84 bins · hop 512"]
+        p2["Compress ×100<br/>float16 .npy cache"]
+    end
 
-Figures, captions, and Mermaid source: [docs/diagrams.md](docs/diagrams.md).
+    subgraph M["Model"]
+        direction TB
+        m1["ResNet50-IBN"]
+        m2["GeM pooling → f_t"]
+        m3["BNNeck → f_c"]
+    end
+
+    subgraph E["Experiment"]
+        direction TB
+        e1["30 runs<br/>3 sizes × 2 arms × 5 seeds"]
+        e2["Covers80 mAP<br/>cosine on f_c"]
+        e3["Paired B − A<br/>95% t-interval"]
+    end
+
+    subgraph R["Remaining"]
+        direction TB
+        r1["Loss-curve check"]
+        r2["Report"]
+    end
+
+    D --> P --> M --> E --> R
+    class d1,d2,d3,p1,p2,m1,m2,m3,e1,e2,e3 done
+    class r1,r2 todo
+```
+
+Green steps are finished and orange steps are still to do.
+
+### Model and losses
+
+```mermaid
+flowchart LR
+    x["CQT input"] --> enc["ResNet50-IBN"] --> gem["GeM pooling"] --> ft(["f_t · 2048-d"])
+    ft --> bn["BNNeck<br/>BatchNorm1d"] --> fc(["f_c"])
+    fc --> cls["Bias-free classifier"] --> ce["Cross-entropy<br/>Arms A and B"]
+    ft --> tri["Batch-hard triplet<br/>margin 0.3<br/>Arm B only"]
+    fc --> ret["Retrieval vector<br/>cosine similarity"]
+```
+
+Both arms share the encoder, pooling, BNNeck and classifier, so the only difference is the triplet loss on f_t.
+
+### Training grid
+
+```mermaid
+flowchart TB
+    subgraph S["Nested training sizes (songs)"]
+        direction LR
+        s50["50"] -->|subset of| s150["150"] -->|subset of| s300["300"]
+    end
+    S --> A["Arm A · cross-entropy"]
+    S --> B["Arm B · cross-entropy + triplet"]
+    A --> seeds["Seeds 0–4, paired across arms"]
+    B --> seeds
+    seeds --> runs["30 independent runs<br/>100 epochs each · no early stopping"]
+```
+
+| Songs | Batches per epoch | Optimizer steps (100 epochs) |
+|---|---|---|
+| 50 | 5 | 500 |
+| 150 | 15 | 1,500 |
+| 300 | 30 | 3,000 |
+
+Every batch is 10 works × 3 clips (30 clips), trained with Adam at learning rate 0.0004 and weight decay 0. A larger set adds batches, not batch size, so the larger sizes also get more optimizer steps.
+
+Detailed diagram sources: [docs/diagrams.md](docs/diagrams.md).
 
 Report plan for office hours: [docs/report_outline.md](docs/report_outline.md).
-
 ## Results
 
 Covers80 mAP after 100 epochs. Each cell is the mean over five paired seeds. Delta is mAP for Arm B minus mAP for Arm A. The interval is a 95% paired t-interval on those five differences (4 degrees of freedom).
